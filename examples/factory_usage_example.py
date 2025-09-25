@@ -5,8 +5,9 @@ Shows how to use MemoryFactory and StoreFactory for consistent initialization.
 """
 
 import logging
-from smartmemory.config_loader import load_memory_config
-from smartmemory.factories import MemoryFactory, MemoryType, StoreFactory, StoreType
+from smartmemory.configuration import MemoryConfig
+from smartmemory.memory.memory_factory import MemoryFactory, MemoryType
+from smartmemory.stores.factory import StoreFactory, StoreType
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -18,7 +19,7 @@ def demonstrate_memory_factory():
 
     # Get configuration
     try:
-        config = load_memory_config()
+        config = MemoryConfig()
         print(f"✅ Loaded configuration successfully")
     except Exception as e:
         print(f"⚠️ Could not load config: {e}")
@@ -63,7 +64,7 @@ def demonstrate_store_factory():
 
     # Get configuration
     try:
-        config = load_memory_config()
+        config = MemoryConfig()
         print(f"✅ Loaded configuration successfully")
     except Exception as e:
         print(f"⚠️ Could not load config: {e}")
@@ -111,10 +112,18 @@ def demonstrate_store_factory():
 
 
 def demonstrate_factory_validation():
-    """Demonstrate factory validation utilities."""
+    """Demonstrate factory validation utilities (optional)."""
     print("\n=== Factory Validation Demonstration ===")
 
-    from smartmemory.factories.test_factories import FactoryValidator
+    try:
+        # FactoryValidator may not be present in current build; make optional
+        from smartmemory.memory.models import FactoryValidator  # type: ignore
+    except Exception as e:
+        print(f"⚠️ FactoryValidator not available: {e}")
+        print("🔍 Basic validation via registry checks:")
+        print(f"   - Registered memory types: {[t.value for t in MemoryFactory.get_registered_types()]}")
+        print(f"   - Registered store types: {[t.value for t in StoreFactory.get_registered_types()]}")
+        return
 
     # Validate memory factory registration
     memory_valid = FactoryValidator.validate_memory_factory_registration()
@@ -127,8 +136,8 @@ def demonstrate_factory_validation():
     # Test individual memory type creation validation
     print("\n🧪 Testing individual memory type validation:")
     try:
-        config = load_memory_config()
-    except:
+        config = MemoryConfig()
+    except Exception:
         config = None
 
     for memory_type in MemoryFactory.get_registered_types():

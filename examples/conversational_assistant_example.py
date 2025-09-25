@@ -138,15 +138,15 @@ class ConversationalAssistant:
 
         for memory_type, store in memory_stores.items():
             try:
-                # Get items from store
+                # Get items from store using public search API
+                # Use wildcard search to retrieve many items, then filter
                 all_items = []
-                if hasattr(store, 'get_all_items'):
-                    all_items = store.get_all_items()
-                elif hasattr(store, '_graph') and hasattr(store._graph, 'nodes'):
-                    for node_id in store._graph.nodes():
-                        item = store.get(node_id)
-                        if item and hasattr(item, 'metadata') and item.metadata.get('user_id') == self.user_id:
-                            all_items.append(item)
+                try:
+                    all_items = store.search("*", top_k=1000)
+                except Exception:
+                    # Fallback to internal implementation if needed
+                    if hasattr(store, '_search_impl'):
+                        all_items = store._search_impl("*", top_k=1000)
 
                 # Calculate similarities and get top results
                 similarities = []
@@ -271,10 +271,12 @@ class ConversationalAssistant:
         # Move important working memories to long-term storage
         working_items = []
         try:
-            if hasattr(self.working_memory, 'get_all_items'):
-                working_items = self.working_memory.get_all_items()
+            # Retrieve recent working items via search
+            working_items = self.working_memory.search("*", top_k=1000)
+            if not working_items and hasattr(self.working_memory, '_search_impl'):
+                working_items = self.working_memory._search_impl("*", top_k=1000)
         except Exception:
-            pass
+            working_items = []
 
         for item in working_items:
             if hasattr(item, 'metadata') and item.metadata.get('session_id') == self.current_session_id:

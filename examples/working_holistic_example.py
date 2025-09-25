@@ -229,15 +229,13 @@ class HolisticSmartMemoryDemo:
 
         for memory_type, store in memory_stores.items():
             try:
-                # Get all items from store
+                # Get items via public search API (fallback to internal _search_impl)
                 all_items = []
-                if hasattr(store, 'get_all_items'):
-                    all_items = store.get_all_items()
-                elif hasattr(store, '_graph') and hasattr(store._graph, 'nodes'):
-                    for node_id in store._graph.nodes():
-                        item = store.get(node_id)
-                        if item:
-                            all_items.append(item)
+                try:
+                    all_items = store.search("*", top_k=1000)
+                except Exception:
+                    if hasattr(store, '_search_impl'):
+                        all_items = store._search_impl("*", top_k=1000)
 
                 # Calculate similarities
                 similarities = []
